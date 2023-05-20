@@ -1571,67 +1571,6 @@ function makeWindowSquare() {
 
 var tmp_fn_names;
 
-function doPlot() {
-	if (theplot.settngsChanged) {
-		theplot.setBackgroundColor($("#options-bgcolor")[0].value);
-		theplot.setAxesColor($("#options-axescolor")[0].value);
-		theplot.setGridColor($("#options-gridcolor")[0].value);
-		theplot.setLabelsColor($("#options-labelscolor")[0].value);
-		theplot.setWindow([$("#options-xmin")[0].value, $("#options-xmax")[0].value, $("#options-ymin")[0].value, $("#options-ymax")[0].value]);
-		theplot.setGrid([$("#options-xgrid")[0].value, $("#options-ygrid")[0].value]);
-		theplot.setShowAxes($("#options-showaxes")[0].checked);
-		theplot.setShowTicks($("#options-showticks")[0].checked);
-		theplot.setShowGrid($("#options-showgrid")[0].checked);
-		theplot.setShowLabels($("#options-showlabels")[0].checked);
-		delete theplot.settngsChanged;
-	}
-	theplot.deleteAllPlots();
-
-	tmp_fn_names = "";
-	$("#plots form:not(.removed)").each(function() {
-		tmp_fn_names += " " + this.eq.value;
-		const opt={color: tnis.color.value}
-
-		switch (+this.dataset.type) {
-			case RESHIX_TYPE_FUNCTION:
-				theplot.addPlot($(this).children(".data-eq").val(), RESHIX_TYPE_FUNCTION, {
-					color: $(this).find('[type="color"]').val()
-				});
-				break;
-			case RESHIX_TYPE_POLAR:
-				theplot.addPlot($(this).children(".data-eq").val(), RESHIX_TYPE_POLAR, {
-					color: $(this).find('[type="color"]').val(),
-					min: $(this).children(".data-min").val(),
-					max: $(this).children(".data-max").val(),
-					step: $(this).children(".data-step").val()
-				});
-				break;
-			case RESHIX_TYPE_PARAMETRIC:
-				theplot.addPlot([$(this).children(".data-eqx").val(), $(this).children(".data-eqy").val()], RESHIX_TYPE_PARAMETRIC, {
-					color: $(this).find('[type="color"]').val(),
-					min: $(this).children(".data-min").val(),
-					max: $(this).children(".data-max").val(),
-					step: $(this).children(".data-step").val()
-				});
-				break;
-			case RESHIX_TYPE_POINTS:
-				lines = $(this).find(".data-eq").val().split(/\n/);
-				points = [];
-				for (i in lines) {
-					coords = lines[i].split(",");
-					if (coords.length == 2) points.push([coords[0], coords[1]])
-				}
-				theplot.addPlot(points, RESHIX_TYPE_POINTS, {
-					color: $(this).find('[type="color"]').val()
-				});
-				break
-		}
-	});
-	tmp_fn_names = tmp_fn_names.trim();
-	findTagsFromFunc();
-	theplot.reDraw()
-}
-
 function doPermalink() {
 	jQuery.post("link-create", "data=" + escape(JSON.stringify(plotState)).replace(/\+/g, "%2B"), function(e, t, n) {
 		$("#dialog-permalink").html('<div style="padding-top:15px;padding-bottom:15px;">Permalink to this graph:<br><a href="http://reshix.com/plot/' + e + '"><b>http://reshix.com/plot/' + e + "</b></a></div>").dialog({
@@ -1654,8 +1593,8 @@ function writeState() {
 	if (_readingFromHash) return
 
 	_ignoreHashChange = true;
-	location.hash = JSON.stringify(theplot.plots, 'type color eq eqx eqy min max step'.split(' '))
-	 .replace(/%/g, '%25').replace(/[\n\r]+/g, '%0A');
+	console.log(location.hash = JSON.stringify(theplot.plots, 'type color eq eqx eqy min max step'.split(' '))
+		 .replace(/%/g, '%25').replace(/(\s*\\n\s*)+/g, '\\n'));
 	_ignoreHashChange = false;
 
 	// t = {
@@ -1678,7 +1617,7 @@ function writeState() {
 	// e.push(t);
 }
 
-function readState() {
+function _readState() {
 	$("#plots").children("form").remove();
 	for (let i in plotState) {
 		const type = parseInt(plotState[i]["type"])
@@ -1719,23 +1658,29 @@ function readState() {
 
 function readState() {
 
-	if (_ignoreHashChange || !location.hash.length<4) return;
+	if (_ignoreHashChange || location.hash.length<4) return;
 
 	_readingFromHash=true;
 
 	const hash = location.hash.substring(1)		
-		.replace(/^q=(.*)$/, '[{"type":"0","eq":"$1"}]');
+		.replace(/^e?q=(.*)$/, '[{"type":"0","color":"","eq":"$1"}]');
 
 	try {
-		theplot.plots=JSON.parse(/^%5B/.test(hash) ? decodeURI(hash) : Base64.decode(hash));
+		var plots=JSON.parse(/^%5B|\[/.test(hash) ? decodeURI(hash) : Base64.decode(hash));
+
+		if (Array.isArray(plots) && plots[0]) theplot.plots=plots;
+		else return;
 
 		$plots.children('form').remove();
 
-		theplot.plots.forEach(addGraph)
+		theplot.plots.forEach(addGraph);
+		refreshPlots();
 
-	} catch (e) {}
+	} catch (e) {theplot.plots=[]}
 
 	_readingFromHash = 0
+
+	return theplot.plots[0]
 }
 
 function refreshPlots() {
@@ -1758,12 +1703,11 @@ function addGraph(plot = {
 	type: +$('#plots_add_type').val()||0,
 	color: '#000000'
 }) {
-	Object.assign(plot, PLOTS[plot.type])
-	//{}
+	Object.setPrototypeOf(plot, PLOTS[plot.type])
 
 	const {type, color, eq, eqx, eqy, min, max, step} = plot,
 
-		inp = (val, name) => `<input name=${name||'eq'} type=text value="${val}">`,
+		inp = (val, name) => `<input name=${name} type=text value="${val}">`,
 
 		eqHTML = (eq, char)=>`<label class="equation">${char} = <textarea name=${eq}>${plot[eq]}</textarea></label>`;
 
@@ -1797,9 +1741,7 @@ function addGraph(plot = {
 		.on('change', refreshPlots)
 		.on('submit', e=>false)
 		.on('keypress', 'textarea', checkEnter)
-		.slideDown();
-
-	let ready;
+		 [_readingFromHash?'show':'slideDown']();
 
 	$('input, textarea', $plot).on('change', parseInputs).each(parseInputs)
 
@@ -1808,9 +1750,10 @@ function addGraph(plot = {
 
 function parseInputs() {
 
-	const {name, value} = this,
+	const {name} = this, 
 		plot=this.form._plot, {type}=plot,
 		getErr = ()=> theplot.parseEquationError;
+	let value = this.value.trim();
 
 	theplot.parseEquationError = '';
 
@@ -1820,13 +1763,12 @@ function parseInputs() {
 	} 
 
 	if (/min|max|step/.test(name)) {
-		let val=value.trim(),
-		 parsed=theplot.parseConst(val||'0');
+		 parsed=theplot.parseConst(value||'0');
 
 		if (!getErr()){
 			if (name=='step' && parsed <= 0) parsed=.01;
 			plot['j'+name] = parsed;
-			this.value = +val==0 ? parsed : value;
+			if (+value==0) this.value = value = parsed;
 		}
 	}
 	if (type==3 && name=='eq') { //plots
@@ -1846,7 +1788,7 @@ function parseInputs() {
 		theplot.parseEquationError = errors.join('\n');
 		console.log(errors, getErr())
 	}
-	plot[name]=this.value;
+	plot[name]=value;
 
 	if (plot.invalid=getErr()) {
 		this.classList.add('invalid');
@@ -1855,7 +1797,6 @@ function parseInputs() {
 }
 
 function checkEnter(e) {
-	console.log(e.which)
 	if (!/^(10|13)$/.test(e.which)) return
 	if (e.shiftKey || this.form._plot.type==3 && e.which==13) return
 	$(this).change();
@@ -1867,6 +1808,8 @@ $(initGraph);
 
 function initGraph() {
 	if (theplot) return;
+	if (!$('#reshix-frame')[0]) return;
+
 	$(".nodrag").mousedown(function(e) {
 		e.preventDefault()
 	})
@@ -1887,7 +1830,7 @@ function initGraph() {
 		"padding-bottom": "3px"
 	});
 	$(".selectmenu").selectmenu();
-	theplot = new reshix(document.getElementById("reshix-frame"));
+	theplot = new reshix($("#reshix-frame")[0]);
 	theplot.settngsChanged=1;
 	theplot.reDraw();
 	theplot.onWindowChange = function(e) {
@@ -1897,19 +1840,8 @@ function initGraph() {
 		$("#options-ymax").val(e[3]);
 		writeState()
 	};
-	// if (window.location.hash == "" || window.location.hash == "#" || window.location.hash == "#!") {
-	// 	$('<li class="plot ui-widget-content">' + $("#plot_template_0").html() + "</li>").data($("#plot_template_0").data()).appendTo("#plots").find(".data-color").miniColors({
-	// 		change: changeColorTimeout
-	// 	});
-	// 	writeState();
-	// 	doPlot()
-	// } else {
-	// 	readStateFromHash();
-	// 	doPlot()
-	// // // }
-	// $(".colorpicker").miniColors({
-	// 	change: changeColorTimeout
-	// })
+
+	readState() || addGraph()
 };
 var changeColorTimeout_t = null;
 var _ignoreHashChange, _readingFromHash;
