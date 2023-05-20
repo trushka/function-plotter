@@ -1,0 +1,104 @@
+	<script>
+		var $=jQuery, $win=$(window);
+	</script>
+<div class="graph-content">
+	<div id="reshix-frame"></div>
+	<div id="plots" class="graph-controls">
+		<div id="plots_add" class="plot" style="cursor:default;">
+			<select id="plots_add_type" class="selectmenu">
+				<option value="0">Function</option>
+				<option value="1">Polar</option>
+				<option value="2">Parametric</option>
+				<option value="3">By points</option>
+			</select>
+			<button onclick="addGraph()">Add</button>
+			<button class="button" onclick='save_visible(); return false;'>Build</button>
+			<button class="button" id="save_button" style="display: none !important;" onclick='save(); return false;'  >Save</button>
+		</div>
+	</div>
+</div>
+<script>
+	$('#save_button').hide();
+
+	function save_visible() {
+		$('#save_button').show();
+	}
+	function save() {
+		var canvas = document.getElementsByTagName("canvas")[0];
+		var anchor = document.createElement("a");
+		anchor.href = canvas.toDataURL("image/png");
+		anchor.download = "IMAGE.PNG";
+		anchor.click();
+		$.post("/wp-admin/admin-ajax.php", {"action": "graphnew", "func": $("#plots .equation").val(), tags: findTagsFromFunc(), "url": document.getElementsByTagName("canvas")[0].toDataURL()}, function(data) {if(data != '') top.location = data; });
+	}
+	//.find('.data-color').miniColors({change:changeColorTimeout});doPlot();writeState();
+</script>
+
+		<div id="dialog-permalink" style="display:none;"></div>
+
+		<div class="ui-widget-content" style="display:none;">
+			<table cellspacing="4" cellpadding="0" style="table-layout:fixed;width:100%;">
+				<tr>
+					<td><div class="ui-widget-header noselect" style="padding:5px;margin-bottom:5px;">Window</div></td>
+					<td style="width:180px;"><div class="ui-widget-header noselect" style="padding:5px;margin-bottom:5px;">Display</div></td>
+					<td style="width:180px;"><div class="ui-widget-header noselect" style="padding:5px;margin-bottom:5px;">Grid Spacing</div></td>
+				</tr>
+				<tr><td valign="top">
+					<table><tr>
+						<td><input id="options-xmin" style="width:60px;" type="text" class="param" value="-4" onKeyPress="checkEnter();" onChange="doPlot();writeState();"></td>
+						<td><span class="param">&lt; x &lt;</span></td>
+						<td><input id="options-xmax" style="width:60px;" type="text" class="param" value="4" onKeyPress="checkEnter();" onChange="doPlot();writeState();"></td>
+					</tr><tr><td colspan="3"><div style="text-align:center;margin-right:auto;margin-left:auto;line-height:0.1em;">
+						<button class="button-makewindowsquare" style="cursor:pointer;cursor:hand;" title="Make window proportions square" onClick="javascript:makeWindowSquare();"></button></div>
+					</td></tr><tr>
+						<td><input id="options-ymin" style="width:60px;" type="text" class="param" value="-3" onKeyPress="checkEnter();" onChange="doPlot();writeState();"></td>
+						<td><span class="param">&lt; y &lt;</span></td>
+						<td><input id="options-ymax" style="width:60px;" type="text" class="param" value="3" onKeyPress="checkEnter();" onChange="doPlot();writeState();"></td>
+					</tr></table>
+				</td><td valign="top">
+					<table>
+						<tr>
+							<td><input class="colorpicker" id="options-bgcolor" type="hidden" value="#FFFFFF"></td>
+							<td></td>
+							<td>Background</td>
+						</tr>
+						<tr>
+							<td><input id="options-gridcolor" class="colorpicker" type="hidden" value="#D0D0D0"></td>
+							<td><input id="options-showgrid" type="checkbox" style="width:12px;height:12px;" checked="checked" value="true" onClick="doPlot();writeState();"></td>
+							<td>Grid</td>
+						</tr>
+						<tr>
+							<td><input id="options-axescolor" class="colorpicker" type="hidden" value="#000000"></td>
+							<td><input id="options-showaxes" type="checkbox" style="width:12px;height:12px;" checked="checked" value="true" onClick="doPlot();writeState();"></td>
+							<td>Axes</td>
+						</tr>
+						<tr>
+							<td></td>
+							<td><input id="options-showticks" type="checkbox" style="width:12px;height:12px;" checked="checked" value="true" onClick="doPlot();writeState();"></td>
+							<td>Tick Marks</td>
+						</tr>
+						<tr>
+							<td><input id="options-labelscolor" class="colorpicker" type="hidden" value="#000000"></td>
+							<td><input id="options-showlabels" type="checkbox" style="width:12px;height:12px;" checked="checked" value="true" onClick="doPlot();writeState();"></td>
+							<td>Numbers</td>
+						</tr>
+					</table>
+				</td><td valign="top">
+					<table><tr>
+						<td>x:</td>
+						<td><input id="options-xgrid" style="width:40px;" type="text" class="param" value="" onKeyPress="checkEnter();" onChange="doPlot();writeState();"></td>
+						<td>&nbsp;&nbsp;</td>
+						<td>y:</td>
+						<td><input id="options-ygrid" style="width:40px;" type="text" class="param" value="" onKeyPress="checkEnter();" onChange="doPlot();writeState();"></td>
+					</tr></table>
+				</td></tr>
+				<tr><td colspan="2">
+					<div class="ui-widget-header noselect" style="padding:5px;margin-bottom:5px;margin-top:10px;">Take your graph with you ...</div>
+				</td><td>
+					<div class="ui-widget-header noselect" style="padding:5px;margin-bottom:5px;margin-top:10px;">Share</div>
+				</td></tr><tr><td colspan="2" valign="top">
+
+			</td></tr>
+			</table>
+			&nbsp;&nbsp;&nbsp;&nbsp;
+		</div>
