@@ -807,7 +807,8 @@ function reshix(container, options) {
 		var c = "";
 		var h = false;
 		for (t; t <= n; t += r) {
-			a = e({t});
+			this.vars.t=t;
+			a = e(this.vars);
 			o = a * Math.cos(t);
 			u = a * Math.sin(t);
 			if (isNaN(u) || isNaN(o)) l = false;
@@ -834,8 +835,9 @@ function reshix(container, options) {
 		var c = false;
 		this.context.beginPath();
 		for (t; t <= r; t += i) {
-			u = ex({t});
-			a = ey({t});
+			this.vars.t=t;
+			u = ex(this.vars);
+			a = ey(this.vars);
 			if (isNaN(a) || isNaN(u)) l = false;
 			else {
 				s = (u - this.xmin) / (this.xmax - this.xmin) * this.width;
