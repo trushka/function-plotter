@@ -83,7 +83,7 @@ function reshix(container, options) {
 	this.container.style.webkitUserSelect = "none";
 	this.container.style.MozUserSelect = "none";
 	if (RESHIX_MSIE) this.cover.unselectable = true;
-	this.cover.style.zIndex = 100;
+	//this.cover.style.zIndex = 100;
 	this.cover.style.background = "#ffffff";
 	this.cover.style.filter = "alpha(opacity=0)";
 	this.cover.style.opacity = 0;
@@ -1832,7 +1832,7 @@ function initGraph() {
 	$(".selectmenu").selectmenu();
 	theplot = new reshix($("#reshix-frame")[0]);
 	theplot.settngsChanged=1;
-	theplot.reDraw();
+	//theplot.reDraw();
 	theplot.onWindowChange = function(e) {
 		$("#options-xmin").val(e[0]);
 		$("#options-xmax").val(e[1]);
@@ -1840,6 +1840,32 @@ function initGraph() {
 		$("#options-ymax").val(e[3]);
 		writeState()
 	};
+
+	$win.on('pointerdown', e=>{
+		rect=$plots[0].getBoundingClientRect();
+		if ($plots.hasClass('swiped')) {
+			if (!$(e.target).closest('#plots, #plots_add_type-menu')[0]){
+				$plots.removeClass('swiped').css('transform', '')
+			}
+		} else if (rect.left - e.pageX < 20) {
+			$plots.addClass('swiped')
+			.css('transform', `translateX(${Math.min($win.width() - rect.right, 0)}px)`)
+		}
+	})
+
+	$('.graph-content').on('touchstart', function(e){
+		const touch0=e.changedTouches[0],
+		 x0=touch0.clientX,
+		 y0=touch0.clientY
+
+		$win.on('touchmove', move).on('touchend touchcancel', function off(e){
+			$win.off('touchmove', move).off('touchend touchcancel', off)
+		})
+
+		function move(e) {
+
+		}
+	})
 
 	readState() || addGraph()
 };
